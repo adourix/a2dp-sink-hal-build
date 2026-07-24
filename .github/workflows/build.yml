@@ -18,7 +18,6 @@ jobs:
           mkdir android
           cd android
           repo init -u https://github.com/LineageOS/android.git -b lineage-19.1 --depth=1
-
       - name: Sync required projects
         run: |
           cd android
@@ -31,6 +30,7 @@ jobs:
             system/libbase \
             system/libhidl \
             system/tools/hidl \
+            vendor/lineage \
             -j4 --force-sync
 
       - name: Build HAL
