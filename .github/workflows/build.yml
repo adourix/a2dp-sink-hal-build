@@ -1,23 +1,31 @@
 name: Build Bluetooth Audio HAL
-on:
+
+"on":
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     steps:
-      - name: Free up disk space
+      - name: Free disk space
         run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+          sudo rm -rf /usr/share/dotnet \
+            /usr/local/lib/android \
+            /opt/ghc \
+            /opt/hostedtoolcache
           sudo apt clean
           df -h
 
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y git curl python3 python-is-python3 bc bison flex \
-            build-essential zip unzip rsync zlib1g-dev libssl-dev \
-            libxml2-utils xsltproc fontconfig openjdk-11-jdk
+          sudo apt install -y \
+            git curl python3 python-is-python3 \
+            bc bison flex build-essential \
+            zip unzip rsync zlib1g-dev \
+            libssl-dev libxml2-utils xsltproc \
+            fontconfig openjdk-11-jdk
 
       - name: Install repo tool
         run: |
@@ -26,54 +34,75 @@ jobs:
           chmod a+x ~/.bin/repo
           echo "$HOME/.bin" >> $GITHUB_PATH
 
-      - name: Configure git identity
+      - name: Configure git
         run: |
           git config --global user.email "ci@example.com"
           git config --global user.name "CI Build"
 
-      - name: Init Lineage tree
+      - name: Init Lineage
         run: |
-          mkdir android && cd android
-          repo init -u https://github.com/LineageOS/android.git -b lineage-19.1 --depth=1 --git-lfs
-      - name: Add missing generic device project
+          mkdir android
+          cd android
+          repo init \
+            -u https://github.com/LineageOS/android.git \
+            -b lineage-19.1 \
+            --depth=1
+
+      - name: Add minimal manifest
         run: |
           cd android
           mkdir -p .repo/local_manifests
-          cat > .repo/local_manifests/generic.xml << 'EOF'
+
+          cat > .repo/local_manifests/minimal.xml <<'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
-            <remote name="aosp" fetch="https://android.googlesource.com" />
-            <project name="device/generic/arm64" path="device/generic/arm64" remote="aosp" revision="refs/tags/android-12.1.0_r27" />
-            <project name="device/generic/goldfish" path="device/generic/goldfish" remote="aosp" revision="refs/tags/android-12.1.0_r27" />
-            <project name="LineageOS/android_vendor_lineage" path="vendor/lineage" revision="lineage-19.1" />
+            <project name="LineageOS/android_vendor_lineage"
+                     path="vendor/lineage"
+                     revision="lineage-19.1" />
+
+            <project name="platform/device/generic"
+                     path="device/generic"
+                     revision="android-12.1.0_r27" />
           </manifest>
           EOF
 
-      - name: Add missing generic device project
+      - name: Sync required sources
         run: |
           cd android
-          mkdir -p .repo/local_manifests
-          cat > .repo/local_manifests/generic.xml << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <manifest>
-            <project name="device/generic/arm64" path="device/generic/arm64" remote="aosp" revision="refs/tags/android-12.1.0_r27" />
-            <project name="device/generic/goldfish" path="device/generic/goldfish" remote="aosp" revision="refs/tags/android-12.1.0_r27" />
-            <project name="LineageOS/android_vendor_lineage" path="vendor/lineage" revision="lineage-19.1" />
-          </manifest>
-          EOF
-      - name: Build HAL
-        run: |
-          cd android
-          source build/envsetup.sh
-          lunch aosp_arm64-eng
-          m -j$(nproc) android.hardware.bluetooth.audio@2.1-impl
 
-      - name: Locate and upload output
+          repo sync \
+            build/make \
+            build/soong \
+            build/blueprint \
+            hardware/interfaces \
+            system/core \
+            system/libbase \
+            system/libhidl \
+            system/tools/hidl \
+            vendor/lineage \
+            device/generic \
+            -c --no-tags --no-clone-bundle \
+            -j4 --force-sync
+
+      - name: Build Bluetooth HAL
+        run: |
+          cd android
+
+          export SOONG_ALLOW_MISSING_DEPENDENCIES=true
+          export TARGET_PRODUCT=aosp_arm64
+          export TARGET_BUILD_VARIANT=eng
+
+          build/soong/soong_ui.bash \
+            --make-mode \
+            android.hardware.bluetooth.audio@2.1-impl
+
+      - name: Collect HAL
         run: |
           cd android
           find out -name "android.hardware.bluetooth.audio@2.1-impl.so" -exec cp {} /tmp/ \;
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload HAL
+        uses: actions/upload-artifact@v4
         with:
           name: bluetooth-audio-hal-2.1-impl
           path: /tmp/android.hardware.bluetooth.audio@2.1-impl.so
