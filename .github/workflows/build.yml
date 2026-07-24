@@ -62,24 +62,18 @@ jobs:
            </manifest>
            EOF
 
-      - name: Sync required sources
-        run: |
-          cd android
-
-          repo sync \
-            build/make \
-            build/soong \
-            build/blueprint \
-            hardware/interfaces \
-            system/core \
-            system/libbase \
-            system/libhidl \
-            system/tools/hidl \
-            vendor/lineage \
-            device/generic \
-            -c --no-tags --no-clone-bundle \
-            -j4 --force-sync
-
+     -name: Add missing generic device project
+  run: |
+    cd android
+    mkdir -p .repo/local_manifests
+    cat > .repo/local_manifests/minimal.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <project name="platform/device/generic"
+           path="device/generic"
+           revision="android-12.1.0_r27" />
+</manifest>
+EOF
       - name: Build Bluetooth HAL
         run: |
           cd android
