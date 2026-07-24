@@ -56,15 +56,11 @@ jobs:
           cat > .repo/local_manifests/minimal.xml <<'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <manifest>
-            <project name="LineageOS/android_vendor_lineage"
-                     path="vendor/lineage"
-                     revision="lineage-19.1" />
-
-            <project name="platform/device/generic"
-                     path="device/generic"
-                     revision="android-12.1.0_r27" />
-          </manifest>
-          EOF
+          <project name="platform/device/generic"
+           path="device/generic"
+           revision="android-12.1.0_r27" />
+           </manifest>
+           EOF
 
       - name: Sync required sources
         run: |
