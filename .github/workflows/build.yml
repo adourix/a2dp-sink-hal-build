@@ -49,21 +49,18 @@ jobs:
           </manifest>
           EOF
 
-      - name: Sync required projects
+      - name: Add missing generic device project
         run: |
           cd android
-          repo sync -c --no-tags --no-clone-bundle -j$(nproc) --force-sync \
-            build/make \
-            build/soong \
-            build/blueprint \
-            hardware/interfaces \
-            system/core \
-            system/libbase \
-            system/libhidl \
-            system/tools/hidl \
-            device/generic/arm64 \
-            device/generic/goldfish \
-            vendor/lineage
+          mkdir -p .repo/local_manifests
+          cat > .repo/local_manifests/generic.xml << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <manifest>
+            <project name="device/generic/arm64" path="device/generic/arm64" remote="aosp" revision="refs/tags/android-12.1.0_r27" />
+            <project name="device/generic/goldfish" path="device/generic/goldfish" remote="aosp" revision="refs/tags/android-12.1.0_r27" />
+            <project name="LineageOS/android_vendor_lineage" path="vendor/lineage" revision="lineage-19.1" />
+          </manifest>
+          EOF
       - name: Build HAL
         run: |
           cd android
