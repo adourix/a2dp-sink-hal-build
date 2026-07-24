@@ -1,1 +1,41 @@
+name: Build Bluetooth Audio HAL
 
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y git repo openjdk-11-jdk python3 bc bison flex
+
+      - name: Init Lineage tree
+        run: |
+          mkdir android
+          cd android
+          repo init -u https://github.com/LineageOS/android.git -b lineage-19.1 --depth=1
+
+      - name: Sync required projects
+        run: |
+          cd android
+          repo sync \
+            build/make \
+            build/soong \
+            build/blueprint \
+            hardware/interfaces \
+            system/core \
+            system/libbase \
+            system/libhidl \
+            system/tools/hidl \
+            -j4 --force-sync
+
+      - name: Build HAL
+        run: |
+          cd android
+          source build/envsetup.sh
+          lunch aosp_arm64-eng
+          m -j2 android.hardware.bluetooth.audio@2.1-impl
