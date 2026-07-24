@@ -55,13 +55,13 @@ jobs:
           mkdir -p .repo/local_manifests
 
           cat > .repo/local_manifests/minimal.xml <<'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<manifest>
-  <project name="platform/device/generic"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <manifest>
+          <project name="platform/device/generic"
            path="device/generic"
            revision="android-12.1.0_r27" />
-</manifest>
-EOF
+            </manifest>
+          EOF
 
       - name: Sync required projects
         run: |
