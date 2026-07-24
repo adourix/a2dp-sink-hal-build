@@ -1,6 +1,6 @@
 name: Build Bluetooth Audio HAL
 
-on:
+"on":
   workflow_dispatch:
 
 jobs:
