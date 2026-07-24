@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+
       - name: Free disk space
         run: |
           sudo rm -rf /usr/share/dotnet \
@@ -27,7 +28,7 @@ jobs:
             libssl-dev libxml2-utils xsltproc \
             fontconfig openjdk-11-jdk
 
-      - name: Install repo tool
+      - name: Install repo
         run: |
           mkdir -p ~/.bin
           curl https://storage.googleapis.com/git-repo-downloads/repo > ~/.bin/repo
@@ -39,7 +40,7 @@ jobs:
           git config --global user.email "ci@example.com"
           git config --global user.name "CI Build"
 
-      - name: Init Lineage
+      - name: Init Lineage tree
         run: |
           mkdir android
           cd android
@@ -54,26 +55,34 @@ jobs:
           mkdir -p .repo/local_manifests
 
           cat > .repo/local_manifests/minimal.xml <<'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <manifest>
-          <project name="platform/device/generic"
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <project name="platform/device/generic"
            path="device/generic"
            revision="android-12.1.0_r27" />
-           </manifest>
-           EOF
+</manifest>
+EOF
 
-     -name: Add missing generic device project
-  run: |
-    cd android
-    mkdir -p .repo/local_manifests
-    cat > .repo/local_manifests/minimal.xml << 'EOF'
-    <?xml version="1.0" encoding="UTF-8"?>
-    <manifest>
-    <project name="platform/device/generic"
-           path="device/generic"
-           revision="android-12.1.0_r27" />
-    </manifest>
-    EOF
+      - name: Sync required projects
+        run: |
+          cd android
+
+          repo sync \
+            build/make \
+            build/soong \
+            build/blueprint \
+            hardware/interfaces \
+            system/core \
+            system/libbase \
+            system/libhidl \
+            system/tools/hidl \
+            device/generic \
+            -c \
+            --no-tags \
+            --no-clone-bundle \
+            -j4 \
+            --force-sync
+
       - name: Build Bluetooth HAL
         run: |
           cd android
@@ -86,7 +95,7 @@ jobs:
             --make-mode \
             android.hardware.bluetooth.audio@2.1-impl
 
-      - name: Collect HAL
+      - name: Find output
         run: |
           cd android
           find out -name "android.hardware.bluetooth.audio@2.1-impl.so" -exec cp {} /tmp/ \;
